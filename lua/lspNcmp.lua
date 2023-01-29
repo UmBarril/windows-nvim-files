@@ -31,61 +31,83 @@ local maps_on_attach = function(_, bufnr)
 	vim.cmd [[ command! Format execute 'lua vim.lsp.buf.formatting()' ]]
 end
 
-local capabilities = vim.lsp.protocol.make_client_capabilities()
-capabilities = require('cmp_nvim_lsp').update_capabilities(capabilities)
-
 vim.cmd [[ 
 let g:markdown_fenced_languages = ['css', 'erb=eruby', 'javascript', 'js=javascript', 'json=javascript', 'ruby', 'sass', 'xml', 'html', 'sql'] 
 ]]
 
-require("nvim-lsp-installer").on_server_ready(function(server)
-	local opts = {
-		on_attach = function(client)
-			maps_on_attach()
-			require 'illuminate'.on_attach(client)
-		end,
-		capabilities = capabilities,
-	}
-	if server.name == "sumneko_lua" then
-		local runtime_path = vim.split(package.path, ';')
-		table.insert(runtime_path, 'lua/?.lua')
-		table.insert(runtime_path, 'lua/?/init.lua')
-		local nvim_runtime = vim.api.nvim_get_runtime_file('', true)
-		opts.settings = {
-			Lua = {
-				runtime = {
-					-- Tell the language server which version of Lua you're using (most likely LuaJIT in the case of Neovim)
-					version = 'LuaJIT',
-					-- Setup your lua path
-					path = runtime_path,
-				},
-				diagnostics = {
-					-- Get the language server to recognize the `vim` global
-					-- and fix 'Undefined global `vim`' errors
-					globals = { 'vim' },
-				},
-				workspace = {
-					-- Make the server aware of Neovim runtime files
-					library = nvim_runtime,
-					-- stop annoying third party library messages
-					checkThirdParty = false,
-				},
-				-- Do not send telemetry data containing a randomized but unique identifier
-				telemetry = { enable = false },
-			}
+local default_on_attach = function(client, bufnr)
+	maps_on_attach()
+	require 'illuminate'.on_attach(client)
+end
+
+local lspconfig = require("lspconfig")
+require("mason").setup {
+	ui = {
+		icons = {
+			package_installed = "✓",
+			package_pending = "➜",
+			package_uninstalled = "✗"
 		}
-		-- elseif server.name == 'vimls' then
-		-- ...
-	elseif server.name == "pyright" then
-		-- opts.settings = {
-		-- 	python = {
-		-- 		pythonPath = vim.g.python3_host_prog,
-		-- 		-- pythonPath = "C:/Program Files/Python310/python.exe",
-		-- 	},
-		-- }
-	end
-	server:setup(opts)
-end)
+	}
+}
+require("mason-lspconfig").setup()
+
+-- https://github.com/williamboman/nvim-lsp-installer/discussions/636
+-- most of this copied from this: https://github.com/chancez/dotfiles/commit/8257f38876e130f3e227932295cb40058c080049
+require("mason-lspconfig").setup_handlers {
+    -- default handler - setup with default settings
+    function (server_name)
+		local capabilities = vim.lsp.protocol.make_client_capabilities()
+		local capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
+		local server_opts = {
+			on_attach = default_on_attach,
+			capabilities = capabilities,
+			flags = {
+			debounce_text_changes = 150,
+			},
+		}
+		local server_specific_opts = servers[server_name]
+		for k,v in pairs(server_specific_opts) do
+			server_opts[k] = v
+		end
+		lspconfig[server_name].setup(server_opts)
+    end,
+   -- you can override the default handler by providing custom handlers per server
+   ["jdtls"] = function ()
+       -- do something with the nvim-jdtls plugin instead
+   end
+}
+
+-- sumneko lua setup
+local runtime_path = vim.split(package.path, ';')
+table.insert(runtime_path, 'lua/?.lua')
+table.insert(runtime_path, 'lua/?/init.lua')
+local nvim_runtime = vim.api.nvim_get_runtime_file('', true)
+lspconfig.sumneko_lua.setup {
+	settings = {
+		Lua = {
+			runtime = {
+				-- Tell the language server which version of Lua you're using (most likely LuaJIT in the case of Neovim)
+				version = 'LuaJIT',
+				-- Setup your lua path
+				path = runtime_path,
+			},
+			diagnostics = {
+				-- Get the language server to recognize the `vim` global
+				-- and fix 'Undefined global `vim`' errors
+				globals = { 'vim' },
+			},
+			workspace = {
+				-- Make the server aware of Neovim runtime files
+				library = nvim_runtime,
+				-- stop annoying third party library messages
+				checkThirdParty = false,
+			},
+			-- Do not send telemetry data containing a randomized but unique identifier
+			telemetry = { enable = false },
+		}
+	}
+}
 
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menuone,noselect'
@@ -93,7 +115,7 @@ vim.o.completeopt = 'menuone,noselect'
 local lspkind = require('lspkind')
 lspkind.init({
 	-- enables text annotations
-	with_text = true,
+	mode = true,
 
 	-- default symbol map
 	-- can be either 'default' (requires nerd-fonts font) or

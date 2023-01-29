@@ -108,7 +108,9 @@ Plug 'ThePrimeagen/refactoring.nvim' -- TODO: learn how to use it
 
 ---- lsp
 Plug 'neovim/nvim-lspconfig'
-Plug 'williamboman/nvim-lsp-installer'
+Plug 'williamboman/mason-lspconfig.nvim' --  bridges mason.nvim with the lspconfig plugin 
+-- Plug 'williamboman/nvim-lsp-installer' -- deprecated
+Plug 'williamboman/mason.nvim' -- lsp-installer substitute
 Plug 'onsails/lspkind-nvim'
 Plug 'nvim-lua/lsp-status.nvim'
 Plug 'simrat39/symbols-outline.nvim'

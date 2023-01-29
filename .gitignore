@@ -1,3 +1,6 @@
+# ignore plugins folder
+autoload/*
+
 # Compiled Lua sources
 luac.out
 

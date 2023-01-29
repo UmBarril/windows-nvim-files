@@ -85,6 +85,14 @@ run_setup()
 -- 		vim.api.nvim_command('augroup END')
 -- 	end
 -- end
+-- 
+
+-- status lineeee
+vim.cmd [[
+    set winbar=%=m\ %f
+	set laststatus=3
+	highlight WinSeparator guibg=None
+	]]
 
 vim.cmd [[
 set omnifunc=syntaxcomplete#Complete
